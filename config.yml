@@ -1,5 +1,7 @@
 general:
   app_name: code-gen-agent
+  role_name: CodeGenLambdaRole
+  region: us-east-1
 
 prompt_info:
   name: "USACO_{model_id}"
