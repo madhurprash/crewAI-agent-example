@@ -1,7 +1,16 @@
 general:
   app_name: code-gen-agent
+  description: Amazon Bedrock Agent for generating code for the USACO benchmark
   role_name: CodeGenLambdaRole
   region: us-east-1
+  model_id: amazon.nova-micro-v1:0
+  agent_instructions: |
+    Generate Python code for the USACO problems. You have access to a tool for generating the code.
+  ttl: 1800
+
+action_group:
+  name: Generate_Python_code
+  description: Generates Python code by using foundation models
 
 prompt_info:
   name: "USACO_{model_id}"

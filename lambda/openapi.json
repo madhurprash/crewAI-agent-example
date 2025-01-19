@@ -1,0 +1,56 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Agent AWS API",
+        "version": "1.0.0",
+        "description": "API to invoke an Amazon Bedrock model to generate code for a given problem statement."
+    },
+    "paths": {
+        "/gen_code": {
+            "post": {
+                "summary": "Generate code for the given problem statement",
+                "description": "Generate code for the given problem statement. The API takes in the problem statement and the model id in the request body and replies with a Python 3 solution.",
+                "operationId": "genCode",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["query", "model_id"],
+                                "properties": {
+                                    "query": {
+                                        "type": "string",
+                                        "description": "problem statement for code generation"
+                                    },
+                                    "model_id": {
+                                        "type": "string",
+                                        "description": "Amazon Bedrock model id to use for code generation"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Code for the requested problem statement",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "description": "Code for the requested problem statement"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

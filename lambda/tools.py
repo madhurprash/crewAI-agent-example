@@ -2,10 +2,11 @@ import os
 import re
 import time
 import json
-import weave
+import boto3
 import random
 import logging
 from pathlib import Path
+from typing import Optional
 from litellm import completion
 from litellm import RateLimitError
 
@@ -14,7 +15,7 @@ logging.basicConfig(format='[%(asctime)s] p%(process)s {%(filename)s:%(lineno)d}
 logger = logging.getLogger(__name__)
 
 # Litellm needs region to be set
-os.environ["AWS_REGION_NAME"] = "us-east-1"
+os.environ["AWS_REGION_NAME"] = os.environ["AWS_REGION"]
 
 # sometimes the model refused to generate content due to internal guardrails
 # so this is a custom exception to catch that error
@@ -82,7 +83,7 @@ def _process_task(model_name: str, formatted_prompt: str, inference_params: dict
             if response['usage']['completion_tokens'] == 0:
                 content = response["choices"][0]["message"]["content"]
                 raise NoContentGeneratedException(f"completion tokens is 0, content={content}")
-            return response
+            return response["choices"][0]["message"]["content"]
 
         except NoContentGeneratedException as e:
             if attempt < max_retries - 1:
@@ -109,15 +110,48 @@ def _process_task(model_name: str, formatted_prompt: str, inference_params: dict
             logger.error(f"Unexpected error processing task: {str(e)}")
             raise
 
-def gen_code(prompt):
+def hydrate_prompt(prompt_template: str, values: dict) -> str:
+    from jinja2 import Template
+
+    # Create a Jinja2 Template object
+    template = Template(prompt_template)
+
+    # Render the template with values
+    return template.render(values)
+
+def gen_code(query: str, model_id: str) -> Optional[str]:
     """
     Use this tool only when you need to generate code based on the problem. The input is the Problem Statement. The tool returns code that the customer can use.
     """
-    prompt_ending = """Please reply with a Python 3 solution to the below problem. Make sure
-                        to wrap your code in '```python' and '```' Markdown delimiters, and
-                        include exactly one block of code with the entire solution.
-                        Just return the code, do not provide any explanation."""
+
+    # get the prompt from the Amazon Bedrock prompt management
+    # the prompt id to use is retrieved from a dictionary stored as an env var string
+    model_id_to_prompt_id_mapping = os.environ.get('MODEL_ID_TO_PROMPT_ID_MAPPING')
+    logger.info(f"model_id_to_prompt_id_mapping={model_id_to_prompt_id_mapping}")
+    if model_id_to_prompt_id_mapping is not None:
+        model_id_to_prompt_id_mapping = json.loads(model_id_to_prompt_id_mapping)
+    else:
+        return None
     
-    inference_params = dict(max_tokens=2000, temperature=0.1, n=1)
-    generated_text = _process_task("bedrock/amazon.nova-micro-v1:0", prompt + prompt_ending, inference_params)
+    # prompt id to use
+    prompt_id = model_id_to_prompt_id_mapping.get(model_id)
+    logger.info(f"found prompt_id={prompt_id} for model_id={model_id}")
+    if prompt_id is not None:        
+        bedrock_agent = boto3.client(service_name = "bedrock-agent", region_name = os.environ['AWS_REGION'])
+        prompt_info = bedrock_agent.get_prompt(promptIdentifier=prompt_id)
+        prompt_template = prompt_info['variants'][0]['templateConfiguration']['text']['text']
+        prompt = hydrate_prompt(prompt_template, dict(question=query))
+
+        # inference parameters
+        inference_params = prompt_info['variants'][0]['inferenceConfiguration']['text']
+        # litellm likes max_tokens not maxTokens
+        inference_params["max_tokens"] = inference_params.pop("maxTokens")
+        inference_params["n"] = 1
+        logger.info(f"model_id={model_id}, inference_params={inference_params}, prompt={prompt}")
+    else:
+        logger.info(f"no prompt id found for model_id={model_id}")
+        return None
+    
+    bedrock_model_id = f"bedrock/{model_id}"
+    generated_text = _process_task(bedrock_model_id, prompt, inference_params)
     return generated_text

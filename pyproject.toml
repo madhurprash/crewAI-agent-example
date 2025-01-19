@@ -5,9 +5,15 @@ description = "Amazon Bedrock Agent for code generation"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "autopep8>=2.3.2",
     "awscli>=1.37.2",
+    "black>=24.10.0",
     "boto3>=1.36.0",
     "botocore>=1.36.2",
     "ipykernel>=6.29.5",
+    "jinja2>=3.1.5",
     "litellm>=1.58.2",
+    "matplotlib>=3.10.0",
+    "rich>=13.9.4",
+    "termcolor>=2.5.0",
 ]
