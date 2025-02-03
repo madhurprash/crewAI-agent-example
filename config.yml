@@ -19,9 +19,9 @@ prompt_info:
 prompt_templates:
   nova:
     models:
-    - amazon.nova-pro-v1:0
-    - amazon.nova-lite-v1:0
-    - amazon.nova-micro-v1:0
+    - us.amazon.nova-pro-v1:0
+    - us.amazon.nova-lite-v1:0
+    - us.amazon.nova-micro-v1:0
     text: |
       Please reply with a Python 3 solution to the below problem. Read the general instructions below that are applicable to every task,
 
