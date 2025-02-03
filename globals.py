@@ -6,3 +6,5 @@ LAMBDA_DIR: str = "lambda"
 CONFIG_FILE: str = "config.yml"
 CODE_GEN_LAMBDA: str = "code-gen"
 LAMBDA_ARN_FILE: str = ".lambda_arn"
+
+CODE_GEN_MODEL_ID: str = "amazon.nova-lite-v1:0"
